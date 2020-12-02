@@ -77,7 +77,8 @@ namespace AOC20
             // Add solvers. Since the solutions only need to be run once they can be added as
             // singletons.
             collection
-                .AddSingleton<ISolvable, Day1.Day1>();
+                .AddSingleton<ISolvable, Day1.Day1>()
+                .AddSingleton<ISolvable, Day2.Day2>();
         }
 
         private static void DisplaySolutions(IEnumerable<Solution> solutions)

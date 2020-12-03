@@ -37,6 +37,7 @@ namespace AOC20
 
             var provider = collection.BuildServiceProvider();
 
+            // Pick solutions based on options.
             IEnumerable<ISolvable> toSolve;
             if (options.Last)
             {
@@ -52,9 +53,10 @@ namespace AOC20
                 toSolve = provider.GetServices<ISolvable>();
             }
 
+            // Run the solvers in order, and display the solutions.
             var results = toSolve
+                .OrderBy(solvable => solvable.Day)
                 .Select(Solution.From)
-                .OrderBy(result => result.Day)
                 .ToList();
 
             if (results.Count > 0)
@@ -74,11 +76,22 @@ namespace AOC20
                 logging
                     .AddConsole()
                     .AddDebug());
-            // Add solvers. Since the solutions only need to be run once they can be added as
-            // singletons.
-            collection
-                .AddSingleton<ISolvable, Day1.Day1>()
-                .AddSingleton<ISolvable, Day2.Day2>();
+
+            // Add solvers using reflection. Since the solutions only need to be run once they can
+            // be added as singletons.
+            foreach (Type type in EnumSolvableTypes())
+            {
+                collection.AddSingleton(typeof(ISolvable), type);
+            }
+        }
+
+        private static IEnumerable<Type> EnumSolvableTypes()
+        {
+            // No need to search multiple assemblies as this is a single project.
+            var asm = typeof(Program).Assembly;
+            var itype = typeof(ISolvable);
+            // Match all non-abstract types implementing ISolvable.
+            return asm.GetTypes().Where(type => !type.IsAbstract && itype.IsAssignableFrom(type));
         }
 
         private static void DisplaySolutions(IEnumerable<Solution> solutions)

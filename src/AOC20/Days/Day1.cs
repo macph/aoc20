@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace AOC20.Day1
 {
@@ -70,23 +68,8 @@ namespace AOC20.Day1
 
         private List<int> ReadNumbersFromFile()
         {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(Resource)
-                ?? throw new Exception($"Resource '{Resource}' not found");
-            using var reader = new StreamReader(stream);
-
-            var numbers = new List<int>();
-
-            while (true)
-            {
-                var line = reader.ReadLine();
-                if (string.IsNullOrWhiteSpace(line))
-                {
-                    break;
-                }
-                numbers.Add(int.Parse(line));
-            }
-
-            return numbers;
+            using var stream = Utils.OpenResource(Resource);
+            return Utils.ReadLines(stream).Select(int.Parse).ToList();
         }
     }
 }

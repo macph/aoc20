@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace AOC20.Day2
@@ -25,22 +23,12 @@ namespace AOC20.Day2
                 .Where(policy => policy.ValidateNew())
                 .Count();
 
-        private List<PasswordPolicy> ReadPasswordsFromFile()
+        private IEnumerable<PasswordPolicy> ReadPasswordsFromFile()
         {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(Resource)
-                ?? throw new Exception($"Resource '{Resource}' not found");
-            using var reader = new StreamReader(stream);
+            using var stream = Utils.OpenResource(Resource);
 
-            var passwords = new List<PasswordPolicy>();
-
-            while (true)
+            foreach (string line in Utils.ReadLines(stream))
             {
-                var line = reader.ReadLine();
-                if (string.IsNullOrWhiteSpace(line))
-                {
-                    break;
-                }
-
                 var match = ReadLine.Match(line);
                 if (!match.Success)
                 {
@@ -53,10 +41,8 @@ namespace AOC20.Day2
                     match.Groups[3].Value[0],
                     match.Groups[4].Value);
 
-                passwords.Add(policy);
+                yield return policy;
             }
-
-            return passwords;
         }
         
         private struct PasswordPolicy

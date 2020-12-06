@@ -2,40 +2,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
+            "label": "run",
             "command": "dotnet",
-            "type": "process",
-            "args": [
-                "build",
-                "${workspaceFolder}/src/AOC20/AOC20.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/src/AOC20/AOC20.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "watch",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "watch",
+            "type": "shell",
+            "args" : [
                 "run",
-                "${workspaceFolder}/src/AOC20/AOC20.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "--project",
+                "${workspaceFolder}/src/AOC20/AOC20.csproj"
             ],
+            "detail": "Solve for all days in AOC20.",
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "run last",
+            "command": "dotnet",
+            "type": "shell",
+            "args" : [
+                "run",
+                "--project",
+                "${workspaceFolder}/src/AOC20/AOC20.csproj",
+                "--last"
+            ],
+            "detail": "Solve for the last day only in AOC20.",
+            "presentation": {
+                "clear": true
+            },
             "problemMatcher": "$msCompile"
         }
     ]

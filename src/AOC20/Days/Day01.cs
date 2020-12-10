@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AOC20.Day1
+namespace AOC20.Day01
 {
-    public class Day1 : ISolvable
+    public class Day01 : ISolvable
     {
-        private const string Resource = "AOC20.Resources.Day1.txt";
+        private const string Resource = "AOC20.Resources.Day01.txt";
 
         public uint Day => 1;
 

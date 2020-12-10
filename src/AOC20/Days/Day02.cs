@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace AOC20.Day2
+namespace AOC20.Day02
 {
-    public class Day2 : ISolvable
+    public class Day02 : ISolvable
     {
-        private const string Resource = "AOC20.Resources.Day2.txt";
+        private const string Resource = "AOC20.Resources.Day02.txt";
 
         private static readonly Regex ReadLine = new Regex(@"^(\d+)-(\d+) (\w): (\w+)$");
 

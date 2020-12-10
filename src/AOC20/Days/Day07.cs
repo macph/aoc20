@@ -5,11 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace AOC20.Day7
+namespace AOC20.Day07
 {
-    public class Day7 : ISolvable
+    public class Day07 : ISolvable
     {
-        private const string Resource = "AOC20.Resources.Day7.txt";
+        private const string Resource = "AOC20.Resources.Day07.txt";
 
         public uint Day => 7;
 

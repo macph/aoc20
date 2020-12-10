@@ -6,7 +6,7 @@ namespace AOC20.Day6
 {
     public class Day6 : ISolvable
     {
-        private const string Resource = "AOC20.Resources.Day6.txt";
+        private const string Resource = "AOC20.Resources.Day06.txt";
 
         public uint Day => 6;
 

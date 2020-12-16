@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AOC20.Days
+namespace AOC20.Day14
 {
     public class Day14 : ISolvable
     {

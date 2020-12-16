@@ -10,6 +10,8 @@ namespace AOC20.Day01
 
         public uint Day => 1;
 
+        public string Title => "Report Repair";
+
         public object SolvePart1() => FindSumEntriesAndMultiply(2020, 2);
 
         public object SolvePart2() => FindSumEntriesAndMultiply(2020, 3);

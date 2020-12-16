@@ -10,6 +10,8 @@ namespace AOC20.Day8
 
         public uint Day => 8;
 
+        public string Title => "Handheld Halting";
+
         public object SolvePart1()
         {
             var instructions = ReadInstructions().ToList();

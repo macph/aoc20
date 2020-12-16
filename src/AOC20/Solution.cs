@@ -8,19 +8,27 @@ namespace AOC20
     public class Solution : IEnumerable<Result>
     {
         public uint Day { get; }
+
+        public string Title { get; }
+
         public object? Result1 { get; }
-        public TimeSpan Elapsed1 { get; }
+
         public object? Result2 { get; }
+
+        public TimeSpan Elapsed1 { get; }
+
         public TimeSpan Elapsed2 { get; }
 
         public Solution(
             uint day,
+            string title,
             object? result1,
-            TimeSpan elapsed1,
             object? result2,
+            TimeSpan elapsed1,
             TimeSpan elapsed2)
         {
             Day = day;
+            Title = title;
             Elapsed1 = elapsed1;
             Result1 = result1;
             Elapsed2 = elapsed2;
@@ -57,13 +65,13 @@ namespace AOC20
             }
             elapsed2 = watch.Elapsed;
 
-            return new Solution(solvable.Day, result1, elapsed1, result2, elapsed2);
+            return new Solution(solvable.Day, solvable.Title, result1, result2, elapsed1, elapsed2);
         }
 
         public IEnumerator<Result> GetEnumerator()
         {
-            if (Result1 != null) yield return new Result(Day, 1, Result1, Elapsed1);
-            if (Result2 != null) yield return new Result(Day, 2, Result2, Elapsed2);
+            if (Result1 != null) yield return new Result(1, Result1, Elapsed1);
+            if (Result2 != null) yield return new Result(2, Result2, Elapsed2);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -71,14 +79,12 @@ namespace AOC20
 
     public class Result
     {
-        public uint Day { get; }
         public uint Part { get; }
         public object Value { get; }
         public FormattedTimespan Elapsed { get; }
 
-        public Result(uint day, uint part, object value, TimeSpan elapsed)
+        public Result(uint part, object value, TimeSpan elapsed)
         {
-            Day = day;
             Part = part;
             Value = value;
             Elapsed = new FormattedTimespan(elapsed);

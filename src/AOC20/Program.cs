@@ -96,22 +96,18 @@ namespace AOC20
 
         private static void DisplaySolutions(IEnumerable<Solution> solutions)
         {
-            var format = "{0,3}  {1,4}  {2,16}  {3,-40}";
-            Console.WriteLine(
-                format,
-                "Day",
-                "Part",
-                "Elapsed",
-                "Solution");
-
-            foreach (Result result in solutions.SelectMany(s => s))
+            foreach (Solution solution in solutions)
             {
-                Console.WriteLine(
-                    format,
-                    result.Day,
-                    result.Part,
-                    result.Elapsed,
-                    result.Value);
+                Console.WriteLine("Day {0}: {1}", solution.Day, solution.Title);
+                foreach (Result result in solution)
+                {
+                    Console.WriteLine(
+                        "    Part {0}  {1,9}   {2}",
+                        result.Part,
+                        result.Elapsed,
+                        result.Value);
+                }
+                Console.WriteLine();
             }
         }
     }

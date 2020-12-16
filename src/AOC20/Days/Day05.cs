@@ -10,6 +10,8 @@ namespace AOC20.Day5
 
         public uint Day => 5;
 
+        public string Title => "Binary Boarding";
+
         public object SolvePart1() => ReadSeatIdsFromFile().Max();
 
         public object SolvePart2()

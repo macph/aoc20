@@ -11,6 +11,8 @@ namespace AOC20.Day04
 
         public uint Day => 4;
 
+        public string Title => "Passport Processing";
+
         public object SolvePart1() =>
             ReadPassportsFromFile()
                 .Where(p => p.CheckFields())

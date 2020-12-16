@@ -10,6 +10,8 @@ namespace AOC20.Day6
 
         public uint Day => 6;
 
+        public string Title => "Custom Customs";
+
         public object SolvePart1() =>
             ReadGroupAnswersFromFile(false).Select(CountAnswers).Sum();
 

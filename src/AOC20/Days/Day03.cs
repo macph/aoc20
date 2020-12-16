@@ -11,6 +11,8 @@ namespace AOC20.Day03
 
         public uint Day => 3;
 
+        public string Title => "Toboggan Trajectory";
+
         public object SolvePart1()
         {
             var forest = ReadForestFromFile();

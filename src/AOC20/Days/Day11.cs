@@ -10,6 +10,8 @@ namespace AOC20.Day11
 
         public uint Day => 11;
 
+        public string Title => "Seating System";
+
         public object SolvePart1()
             => ReadGrid().RunUntilStable(Mode.Adjacent).Occupied;
 

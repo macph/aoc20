@@ -13,6 +13,8 @@ namespace AOC20.Day07
 
         public uint Day => 7;
 
+        public string Title => "Handy Haversacks";
+
         public object SolvePart1()
         {
             var rules = new RuleCollection(ReadRulesFromFile());

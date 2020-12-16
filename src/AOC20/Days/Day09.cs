@@ -10,6 +10,8 @@ namespace AOC20.Day9
 
         public uint Day => 9;
 
+        public string Title => "Encoding Error";
+
         public object SolvePart1() => GetFirstInvalidNumber(ReadNumbers());
 
         public object SolvePart2()

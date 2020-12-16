@@ -4,6 +4,8 @@ namespace AOC20
     {
         uint Day { get; }
 
+        string Title { get; }
+
         object SolvePart1();
 
         object SolvePart2();

@@ -11,6 +11,8 @@ namespace AOC20.Day16
 
         public uint Day => 16;
 
+        public string Title => "Ticket Translation";
+
         public object SolvePart1() => ReadTicketData().InvalidTicketValues().Sum();
 
         public object SolvePart2()

@@ -10,6 +10,8 @@ namespace AOC20.Day12
 
         public uint Day => 12;
 
+        public string Title => "Rain Risk";
+
         public object SolvePart1() =>
             // Start at origin, facing east with waypoint 1 east.
             ReadInstructions()

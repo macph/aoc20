@@ -10,6 +10,8 @@ namespace AOC20.Day13
 
         public uint Day => 13;
 
+        public string Title => "Shuttle Search";
+
         public object SolvePart1()
         {
             var (service, time) = ReadTimetable().NextService();

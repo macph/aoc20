@@ -10,6 +10,8 @@ namespace AOC20.Day10
 
         public uint Day => 10;
 
+        public string Title => "Adapter Array";
+
         public object SolvePart1()
         {
             var differences = new Adapters(ReadNumbers()).Differences();

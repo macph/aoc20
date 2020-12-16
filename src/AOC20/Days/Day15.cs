@@ -10,6 +10,8 @@ namespace AOC20.Day15
 
         public uint Day => 15;
 
+        public string Title => "Rambunctious Recitation";
+
         public object SolvePart1() =>
             ReciteNumbers(Initial).Skip(2020 - 1).First();
 

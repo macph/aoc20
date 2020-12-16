@@ -13,6 +13,8 @@ namespace AOC20.Day02
 
         public uint Day => 2;
 
+        public string Title => "Password Philosophy";
+
         public object SolvePart1() =>
             ReadPasswordsFromFile()
                 .Where(policy => policy.ValidateOld())

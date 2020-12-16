@@ -10,6 +10,8 @@ namespace AOC20.Day14
 
         public uint Day => 14;
 
+        public string Title => "Docking Data";
+
         public object SolvePart1() => LoadMemory(ReadInstructions(), false);
 
         public object SolvePart2() => LoadMemory(ReadInstructions(), true);

@@ -31,8 +31,8 @@ namespace AOC20
         {
             Stopwatch watch;
             object? result1;
-            TimeSpan elapsed1;
             object? result2;
+            TimeSpan elapsed1;
             TimeSpan elapsed2;
 
             watch = Stopwatch.StartNew();
@@ -43,7 +43,6 @@ namespace AOC20
             catch (NotImplementedException)
             {
                 result1 = null;
-                elapsed1 = default;
             }
             elapsed1 = watch.Elapsed;
 
@@ -75,38 +74,90 @@ namespace AOC20
         public uint Day { get; }
         public uint Part { get; }
         public object Value { get; }
-        public TimeSpan Elapsed { get; }
+        public FormattedTimespan Elapsed { get; }
 
         public Result(uint day, uint part, object value, TimeSpan elapsed)
         {
             Day = day;
             Part = part;
             Value = value;
-            Elapsed = elapsed;
+            Elapsed = new FormattedTimespan(elapsed);
+        }
+    }
+
+    public struct FormattedTimespan : IEquatable<FormattedTimespan>
+    {
+        private const long TicksPerSecond = TimeSpan.TicksPerSecond;
+        private const long TicksPerMillisecond = TimeSpan.TicksPerMillisecond;
+        private const long TicksPerMicrosecond = TimeSpan.TicksPerMillisecond / 1000;
+
+        private const long Threshold = 2000L;
+        private const int Figures = 3;
+
+        private readonly TimeSpan span;
+
+        public FormattedTimespan(TimeSpan span)
+        {
+            this.span = span;
         }
 
-        public string FormatElapsed()
+        public override string ToString()
         {
-            if (Elapsed.Ticks < 2 * TimeSpan.TicksPerMillisecond / 1000)
+            if (span.Ticks < Threshold * TicksPerMicrosecond)
             {
-                // Print nanoseconds
-                return $"{Elapsed.Ticks * 1000000 / TimeSpan.TicksPerMillisecond} ns";
+                // Print microseconds.
+                return $"{RoundTo((double)span.Ticks / TicksPerMicrosecond, Figures)} µs";
             }
-            else if (Elapsed.Ticks < 2 * TimeSpan.TicksPerMillisecond)
+            else if (span.Ticks < Threshold * TicksPerMillisecond)
             {
-                // Print microseconds
-                return $"{Elapsed.Ticks * 1000 / TimeSpan.TicksPerMillisecond} µs";
-            }
-            else if (Elapsed.Ticks < 2 * TimeSpan.TicksPerSecond)
-            {
-                // Print milliseconds
-                return $"{Elapsed.Ticks / TimeSpan.TicksPerMillisecond} ms";
+                // Print milliseconds.
+                return $"{RoundTo((double)span.Ticks / TicksPerMillisecond, Figures)} ms";
             }
             else
             {
-                // Print seconds
-                return $"{Elapsed.Ticks / TimeSpan.TicksPerSecond} s";
+                // Print seconds.
+                return $"{RoundTo((double)span.Ticks / TicksPerSecond, Figures)} ms";
             }
         }
+
+        private static double RoundTo(
+            double value,
+            int signficiantFigures,
+            MidpointRounding rounding = MidpointRounding.AwayFromZero)
+        {
+            if (signficiantFigures <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(signficiantFigures));
+            }
+            if (value == 0 || double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return value;
+            }
+
+            // Use floor value of log10 result to get correct size for both sides of 1.
+            var size = (int)Math.Floor(Math.Log10(Math.Abs(value)));
+
+            double rounded;
+
+            if (size >= signficiantFigures)
+            {
+                // Round to nearest integer..
+                rounded = Math.Round(value, rounding);
+            }
+            else
+            {
+                // Round decimal digits to match signficiant figures.
+                var decimals = signficiantFigures - 1 - size;
+                rounded = Math.Round(value, decimals, rounding);
+            }
+
+            return rounded;
+        }
+
+        public override int GetHashCode() => span.GetHashCode();
+
+        public override bool Equals(object? obj) => obj is FormattedTimespan && Equals(obj);
+
+        public bool Equals(FormattedTimespan other) => span == other.span;
     }
 }

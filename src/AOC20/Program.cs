@@ -110,7 +110,7 @@ namespace AOC20
                     format,
                     result.Day,
                     result.Part,
-                    result.FormatElapsed(),
+                    result.Elapsed,
                     result.Value);
             }
         }

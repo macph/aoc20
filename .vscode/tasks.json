@@ -2,10 +2,22 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/AOC20/AOC20.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "run",
             "command": "dotnet",
             "type": "shell",
-            "args" : [
+            "args": [
                 "run",
                 "--project",
                 "${workspaceFolder}/src/AOC20/AOC20.csproj"
@@ -24,6 +36,7 @@
                 "run",
                 "--project",
                 "${workspaceFolder}/src/AOC20/AOC20.csproj",
+                "--",
                 "--last"
             ],
             "detail": "Solve for the last day only in AOC20.",

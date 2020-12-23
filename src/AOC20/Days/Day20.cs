@@ -9,6 +9,13 @@ namespace AOC20.Day20
     {
         private const string Resource = "AOC20.Resources.Day20.txt";
 
+        private const string Monster = 
+            "                  # " +
+            "#    ##    ##    ###" +
+            " #  #  #  #  #  #   ";
+        private const int MonsterHeight = 3;
+        private const int MonsterWidth = 20;
+
         public uint Day => 20;
 
         public string Title => "Jurassic Jigsaw";
@@ -18,7 +25,13 @@ namespace AOC20.Day20
 
         public object SolvePart2()
         {
-            throw new NotImplementedException();
+            var array = Monster.Select(c => c == '#').ToArray();
+            var monster = new Image(array, MonsterHeight, MonsterWidth);
+
+            var image = ReadTiles().ArrangeTiles().CreateImage();
+            image.ExcludeImage(monster);
+
+            return image.Count;
         }
 
         private TileSet ReadTiles()
@@ -36,13 +49,13 @@ namespace AOC20.Day20
                 }
                 var id = int.Parse(lines.Current[5..^1]);
 
-                var pixels = new List<bool>();
+                var pixels = new List<bool>(TileSet.Size);
                 while (lines.MoveNext() && !string.IsNullOrWhiteSpace(lines.Current))
                 {
                     pixels.AddRange(lines.Current.Select(ParsePixel));
                 }
 
-                set.Add(id, new Tile(pixels));
+                set.Add(id, new Image(pixels, TileSet.Side, TileSet.Side));
             }
 
             return set;
@@ -58,19 +71,23 @@ namespace AOC20.Day20
 
     public class TileSet
     {
-        private readonly Dictionary<int, Tile> tiles;
-        private readonly Dictionary<int, List<MatchingTile>> cache;
+        public const int Side = 10;
+        public const int Size = Side * Side;
+
+        private readonly Dictionary<int, Image> tiles;
 
         public TileSet()
         {
-            tiles = new Dictionary<int, Tile>();
-            cache = new Dictionary<int, List<MatchingTile>>();
+            tiles = new Dictionary<int, Image>();
         }
 
-        public void Add(int id, Tile tile)
+        public void Add(int id, Image tile)
         {
+            if (tile.Height != Side || tile.Width != Side)
+            {
+                throw new ArgumentException("Expected a 12 x 12 image");
+            }
             tiles.Add(id, tile);
-            cache.Clear();
         }
 
         public ArrangedTiles ArrangeTiles()
@@ -80,58 +97,46 @@ namespace AOC20.Day20
             var first = tiles.Keys.First();
             found.Add(first, tiles[first], default, Transformation.None);
 
-            return FindNextTile(found, first).First();
-        }
+            var queue = new Queue<int>();
+            queue.Enqueue(first);
 
-        private IEnumerable<ArrangedTiles> FindNextTile(ArrangedTiles found, int next)
-        {
-            if (found.Count == tiles.Count)
+            while (queue.Count > 0)
             {
-                yield return found;
-                yield break;
-            }
+                var next = queue.Dequeue();
+                var position = found.GetPosition(next);
+                var tr = found.GetTransformation(next);
 
-            List<MatchingTile> matches;
-
-            if (cache.ContainsKey(next))
-            {
-                matches = cache[next];
-            }
-            else
-            {
-                matches = tiles.Keys
+                // Find all adjacent tiles with matching borders.
+                // We're making the assumption that every pair of adjacent edges is unique and we
+                // don't need to branch out to check every possible combination.
+                var matches = tiles.Keys
                     .Where(other => other != next)
                     .SelectMany(other =>
                         tiles[next]
                             .Matches(tiles[other])
                             .Select(p => new MatchingTile(other, p.Edge, p.Tr)))
-                    .ToList();
-                cache[next] = matches;
-            }
+                    .ToArray();
 
-            var position = found.GetPosition(next);
-            var tr = found.GetTransformation(next);
-
-            foreach (MatchingTile match in matches)
-            {
-                var tileId = match.Id;
-                var tile = tiles[tileId].Transform(tr.Combine(match.Tr));
-                var tilePosition = position + match.Edge.Offset();
-                var tileTr = match.Tr;
-
-                if (!found.IsValid(tileId, tile, tilePosition))
+                foreach (MatchingTile match in matches)
                 {
-                    continue;
-                }
+                    if (found.ContainsId(match.Id))
+                    {
+                        // Tile was inserted already, skip.
+                        continue;
+                    }
+                    // Each adjacent tile was transformed relative to this tile before
+                    // transformation so we need to compose the transformations and set the edge
+                    // correctly.
+                    var tileTr = Transformations.Compose(match.Tr, tr);
+                    var tile = tiles[match.Id].Transform(tileTr);
+                    var tilePosition = position + match.Edge.Transform(tr).Offset();
 
-                var newFound = new ArrangedTiles(found);
-                newFound.Add(tileId, tile, tilePosition, tileTr);
-
-                foreach (ArrangedTiles nextFound in FindNextTile(newFound, tileId))
-                {
-                    yield return nextFound;
+                    found.Add(match.Id, tile, tilePosition, tileTr);
+                    queue.Enqueue(match.Id);
                 }
             }
+
+            return found;
         }
 
         private class MatchingTile
@@ -148,13 +153,28 @@ namespace AOC20.Day20
             }
         }
     }
-    
+
     public class ArrangedTiles
     {
+        private const int Side = TileSet.Side;
+        private const int Size = TileSet.Size;
+
         private readonly Dictionary<Vector, TilePosition> tiles;
         private readonly Dictionary<int, Vector> ids;
 
         public int Count => tiles.Count;
+
+        public int MinX => tiles.Values.Select(t => t.Position.X).Min();
+
+        public int MinY => tiles.Values.Select(t => t.Position.Y).Min();
+
+        public int MaxX => tiles.Values.Select(t => t.Position.X).Max();
+
+        public int MaxY => tiles.Values.Select(t => t.Position.Y).Max();
+
+        public int[] XRange => new[] { MinX, MaxX };
+
+        public int[] YRange => new[] { MinY, MaxY };
 
         public IReadOnlyDictionary<int, Vector> Ids => ids;
 
@@ -170,13 +190,17 @@ namespace AOC20.Day20
             ids = new Dictionary<int, Vector>(old.ids);
         }
 
+        public bool ContainsPosition(Vector position) => tiles.ContainsKey(position);
+
+        public bool ContainsId(int id) => ids.ContainsKey(id);
+
         public Vector GetPosition(int id) => ids[id];
 
         public Transformation GetTransformation(int id) => tiles[ids[id]].Tr;
 
-        public Tile GetTile(int id) => tiles[ids[id]].Tile;
+        public Image GetTile(int id) => tiles[ids[id]].Tile;
 
-        public void Add(int id, Tile tile, Vector position, Transformation tr)
+        public void Add(int id, Image tile, Vector position, Transformation tr)
         {
             if (IsValid(id, tile, position))
             {
@@ -189,7 +213,7 @@ namespace AOC20.Day20
             }
         }
 
-        public bool IsValid(int id, Tile tile, Vector position)
+        private bool IsValid(int id, Image tile, Vector position)
         {
             if (ids.ContainsKey(id) || tiles.ContainsKey(position))
             {
@@ -200,7 +224,7 @@ namespace AOC20.Day20
             {
                 var offset = position + edge.Offset();
                 if (tiles.TryGetValue(offset, out var adj) &&
-                    tile.Border(edge) != adj.Tile.Border(edge.Opposite()))
+                    !Enumerable.SequenceEqual(tile.Border(edge), adj.Tile.Border(edge.Opposite())))
                 {
                     return false;
                 }
@@ -211,31 +235,73 @@ namespace AOC20.Day20
 
         public IEnumerable<int> CornerIds()
         {
-            var minX = tiles.Values.Select(t => t.Position.X).Min();
-            var minY = tiles.Values.Select(t => t.Position.Y).Min();
-            var maxX = tiles.Values.Select(t => t.Position.X).Max();
-            var maxY = tiles.Values.Select(t => t.Position.Y).Max();
+            var xRange = XRange;
+            return YRange
+                .SelectMany(y => xRange.Select(x => new Vector(x, y)))
+                .Select(p => tiles.Values.Where(t => t.Position == p).Single().Id);
+        }
 
-            foreach (int y in new [] { minY, maxY })
+        public Image CreateImage()
+        {
+            var length = 12;
+            var size = length * length;
+            var xRange = XRange;
+            var yRange = YRange;
+
+            if (Count != size ||
+                xRange[1] - xRange[0] != length - 1 ||
+                yRange[1] - yRange[0] != length - 1)
             {
-                foreach (int x in new [] { minX, maxX })
+                throw new Exception($"Expected a {length} * {length} square of tiles");
+            }
+
+            var arrayTiles = new Image[size];
+
+            var a = 0;
+            for (var j = yRange[0]; j < yRange[1] + 1; j++)
+            {
+                for (var i = xRange[0]; i < xRange[1] + 1; i++)
                 {
-                    yield return tiles.Values
-                        .Where(t => t.Position.X == x && t.Position.Y == y)
-                        .Single()
-                        .Id;
+                    arrayTiles[a] = tiles[new Vector(i, j)].Tile;
+                    a++;
                 }
             }
+
+            // Remove border from each tile before merging.
+            var imageTileSide = Side - 2;
+            var imageSide = imageTileSide * length;
+            var imageSize = imageTileSide * imageTileSide * size;
+
+            var image = new bool[imageSize];
+
+            for (var k = 0; k < size; k++)
+            {
+                var t = arrayTiles[k];
+                var i0 = imageTileSide * (k % length);
+                var j0 = imageTileSide * (k / length);
+
+                for (var j = 1; j < Side - 1; j++)
+                {
+                    for (var i = 1; i < Side - 1; i++)
+                    {
+                        var i1 = i0 + i - 1;
+                        var j1 = j0 + j - 1;
+                        image[i1 + imageSide * j1] = t[i + Side * j];
+                    }
+                }
+            }
+
+            return new Image(image, imageSide, imageSide);
         }
 
         private struct TilePosition
         {
             public int Id { get; }
-            public Tile Tile { get; }
+            public Image Tile { get; }
             public Vector Position { get; }
             public Transformation Tr { get; }
 
-            public TilePosition(int id, Tile tile, Vector position, Transformation tr)
+            public TilePosition(int id, Image tile, Vector position, Transformation tr)
             {
                 Id = id;
                 Tile = tile;
@@ -245,191 +311,140 @@ namespace AOC20.Day20
         }
     }
 
-    public struct Tile : IEquatable<Tile>
+    public class Image
     {
-        public const int Side = 10;
-        public const int Size = Side * Side;
+        private readonly bool[] data;
+        private readonly int height;
+        private readonly int width;
 
-        private const int Threshold = Size / 2;
+        public int Height => height;
 
-        private ulong d0;
-        private ulong d1;
+        public int Width => width;
+
+        public int Size => height * width;
+
+        public int Count => data.Where(i => i).Count();
 
         public bool this[int index]
         {
-            get
-            {
-                if (index < 0 || index >= Size)
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                return (index < Threshold)
-                    ? (d0 & (1UL << index)) > 0
-                    : (d1 & (1UL << (index - Threshold))) > 0;
-            }
-            private set
-            {
-                if (index < 0 || index >= Size)
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                if (index < Threshold && value)
-                {
-                    d0 |= 1UL << index;
-                }
-                else if (index < Threshold)
-                {
-                    d0 &= ~(1UL << index);
-                }
-                else if (value)
-                {
-                    d1 |= 1UL << (index - Threshold);
-                }
-                else
-                {
-                    d1 &= ~(1UL << (index - Threshold));
-                }
-            }
+            get => data[index];
+            private set => data[index] = value;
         }
 
         public bool this[Vector position]
         {
-            get
-            {
-                if (position.X < 0 ||
-                    position.X >= Size ||
-                    position.Y < 0 ||
-                    position.Y >= Size )
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                return this[position.X + Side * position.Y];
-            }
-            private set
-            {
-                if (position.X < 0 ||
-                    position.X >= Size ||
-                    position.Y < 0 ||
-                    position.Y >= Size )
-                {
-                    throw new IndexOutOfRangeException();
-                }
-                this[position.X + Side * position.Y] = value;
-            }
+            get => data[position.AsIndex(width)];
+            private set => data[position.AsIndex(width)] = value;
         }
 
-        private Tile(ulong d0, ulong d1)
+        public Image(IEnumerable<bool> data, int height, int width)
         {
-            var half = 1UL << Threshold;
+            if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+            if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
 
-            if (d0 >= half) throw new ArgumentOutOfRangeException(nameof(d0));
-            if (d1 >= half) throw new ArgumentOutOfRangeException(nameof(d1));
+            this.data = data.ToArray();
+            if (this.data.Length != height * width)
+            {
+                throw new ArgumentException(
+                    $"Expected image to be {height} * {width} = {height * width} elements");
+            }
 
-            this.d0 = d0;
-            this.d1 = d1;
+            this.height = height;
+            this.width = width;
         }
 
-        public Tile(IEnumerable<bool> data)
+        private Image(bool[] data, int width)
         {
-            d0 = 0;
-            d1 = 0;
-            using var enumerator = data.GetEnumerator();
+            if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+            if (data.Length % width != 0)
+            {
+                throw new ArgumentException($"Expected image to be a multiple of {width} elements");
+            }
+
+            this.data = data;
+            this.height = this.data.Length / width;
+            this.width = width;
+        }
+
+        public Image Transform(Transformation tr)
+        {
+            // Use the distance between min and max indices.
+            var transform = tr.GetTransform(height - 1, width - 1);
+
+            if (transform is null)
+            {
+                return this;
+            }
+
+            // Swap height and width if rotating.
+            var newWidth = tr.HasFlag(Transformation.Rotation) ? height : width;
+            var newData = new bool[Size];
 
             for (var i = 0; i < Size; i++)
             {
-                if (!enumerator.MoveNext())
+                if (data[i])
                 {
-                    InvalidArraySize(nameof(data));
-                }
-                this[i] = enumerator.Current;
-            }
-
-            if (enumerator.MoveNext())
-            {
-                InvalidArraySize(nameof(data));
-            }
-        }
-
-        private static void InvalidArraySize(string param)
-        {
-            throw new ArgumentException("Tile expected to be a 10x10 square", param);
-        }
-
-        public Tile Transform(Transformation tr)
-        {
-            Func<Vector, Vector>? transform = null;
-
-            if (tr.HasFlag(Transformation.Horizontal))
-            {
-                if (transform is null)
-                {
-                    transform = ReflectHorizontal;
-                }
-                else
-                {
-                    transform += ReflectHorizontal;
-                }
-            }
-            if (tr.HasFlag(Transformation.Vertical))
-            {
-                if (transform is null)
-                {
-                    transform = ReflectVertical;
-                }
-                else
-                {
-                    transform += ReflectVertical;
-                }
-            }
-            if (tr.HasFlag(Transformation.Rotation))
-            {
-                if (transform is null)
-                {
-                    transform = Rotate;
-                }
-                else
-                {
-                    transform += Rotate;
-                }
-            }
-            
-            return (transform is null) ? this : ApplyTransform(transform);
-        }
-
-        private Tile ApplyTransform(Func<Vector, Vector> transform)
-        {
-            Tile tile = default;
-            for (var i = 0; i < Size; i++)
-            {
-                if (this[i])
-                {
-                    var p0 = new Vector(i % Side, i / Side);
+                    var p0 = Vector.FromIndex(i, width);
                     var p1 = transform(p0);
-                    tile[p1] = true;
+                    var j = p1.AsIndex(newWidth);
+                    newData[j] = true;
                 }
             }
 
-            return tile;
+            return new Image(newData, newWidth);
         }
 
-        private static Vector ReflectHorizontal(Vector position) =>
-            new Vector(Side - position.X - 1, position.Y);
-
-        private static Vector ReflectVertical(Vector position) =>
-            new Vector(position.X, Side - position.Y - 1);
-
-        private static Vector Rotate(Vector position)
+        public int ExcludeImage(Image image)
         {
-            // Rotate 90 degrees clockwise.
-            // Using the 2D rotation matrix, offsetting the position such that the centre of
-            // rotation is in middle of the tile and simplifying with sin(90) = 1 and
-            // cos(90) = 0, we get the following
-            return new Vector(Side - position.Y - 1, position.X);
+            if (image.width > width || image.height > height)
+            {
+                throw new ArgumentException("Inner image must not exceed this image's dimensions");
+            }
+
+            var found = 0;
+            var indices = new HashSet<int>();
+
+            foreach (Transformation tr in Transformations.All)
+            {
+                var transformed = image.Transform(tr);
+                // Work on a smaller section of outer image such that the inner image will not go
+                // out of bounds.
+                var leftHeight = height - transformed.height + 1;
+                var leftWidth = width - transformed.width + 1;
+
+                for (var j = 0; j < leftHeight; j++)
+                {
+                    for (var i = 0; i < leftWidth; i++)
+                    {
+                        var p0 = new Vector(i, j);
+                        var innerIndices = Enumerable.Range(0, transformed.Size)
+                            .Where(k => transformed.data[k])
+                            .Select(k => Vector.FromIndex(k, transformed.width))
+                            .Select(p1 => (p0 + p1).AsIndex(width));
+
+                        // Check if every pixel in inner image relative to p0 exists in the outer
+                        // image.
+                        if (innerIndices.All(j => data[j]))
+                        {
+                            indices.UnionWith(innerIndices);
+                            found++;
+                        }
+                    }
+                }
+            }
+
+            // Unset every pixel found.
+            foreach (int i in indices)
+            {
+                data[i] = false;
+            }
+
+            return found;
         }
 
-        public IEnumerable<(Edge Edge, Transformation Tr)> Matches(Tile other)
+        public IEnumerable<(Edge Edge, Transformation Tr)> Matches(Image other)
         {
-            var borders = Edges.All.Select(Border).ToArray();
+            var borders = Edges.All.Select(e => Border(e).ToArray()).ToArray();
 
             foreach (Transformation tr in Transformations.All)
             {
@@ -437,7 +452,7 @@ namespace AOC20.Day20
                 foreach (Edge edge in Edges.All)
                 {
                     var otherBorder = transformed.Border(edge.Opposite());
-                    if (borders[(int)edge] == otherBorder)
+                    if (Enumerable.SequenceEqual(borders[(int)edge], otherBorder))
                     {
                         yield return (edge, tr);
                     }
@@ -445,59 +460,24 @@ namespace AOC20.Day20
             }
         }
 
-        public ushort Border(Edge edge)
+        public IEnumerable<bool> Border(Edge edge)
         {
-            var initial = Enumerable.Range(0, Side);
+            if (height > 32 || width > 32)
+            {
+                throw new InvalidOperationException("Image too large for integer border values");
+            }
+
             var indices = edge switch
             {
-                Edge.Top => initial,
-                Edge.Right => initial.Select(i => Side - 1 + (i * Side)),
-                Edge.Bottom => initial.Select(i => Size - Side + i),
-                Edge.Left => initial.Select(i => i * Side),
+                Edge.Top => Enumerable.Range(0, width),
+                Edge.Right => Enumerable.Range(0, height).Select(i => width * (i + 1) - 1),
+                Edge.Bottom => Enumerable.Range(0, width).Select(i => Size - width + i),
+                Edge.Left => Enumerable.Range(0, height).Select(i => i * width),
                 _ => throw new ArgumentOutOfRangeException(nameof(edge)),
             };
-            return BorderInt(indices);
+
+            return indices.Select(i => data[i]);
         }
-
-        private ushort BorderInt(IEnumerable<int> indices)
-        {
-            var value = 0;
-            var enumerator = indices.GetEnumerator();
-            for (var i = 0; i < Side; i++)
-            {
-                if (!enumerator.MoveNext())
-                {
-                    throw new Exception("Expected 10 elements");
-                }
-                if (this[enumerator.Current])
-                {
-                    value |= 1 << i;
-                }
-            }
-
-            return (ushort)value;
-        }
-
-        public string Print()
-        {
-            var builder = new StringBuilder();
-            for (var j = 0; j < Side; j++)
-            {
-                for (var i = 0; i < Side; i++)
-                {
-                    builder.Append(this[new Vector(i, j)] ? '#' : '.');
-                }
-                builder.AppendLine();
-            }
-
-            return builder.ToString();
-        }
-
-        public override int GetHashCode() => (d0, d1).GetHashCode();
-
-        public override bool Equals(object? obj) => obj is Tile t && Equals(t);
-
-        public bool Equals(Tile other) => d0 == other.d0 && d1 == other.d1;
     }
 
     public enum Edge : byte
@@ -569,18 +549,78 @@ namespace AOC20.Day20
         public static readonly IEnumerable<Transformation> All =
             Enumerable.Range(0, 1 << 3).Select(i => (Transformation)i).ToArray();
 
-        public static Transformation Combine(this Transformation left, Transformation right)
+        public static Transformation Compose(Transformation left, Transformation right)
         {
-            var combined = left ^ right;
-            if (left.HasFlag(Transformation.Rotation) && right.HasFlag(Transformation.Rotation))
-            {
-                // Combining two 90 degree rotations will unset the flag as above but flip both
-                // horizontal and vertical reflection axes as they also represent a 180 degree
-                // rotation.
-                combined ^= Transformation.Horizontal | Transformation.Vertical;
-            }
+            // The group of transformations is not abelian, that is, applying the 3 transformations
+            // in different orders do not produce the same result.
+            // Composing left with right transformations gives this Cayley table:
+            //   right _   h   v   hv  r   hr  vr  hvr
+            // left
+            // _       _   h   v   hv  r   hr  vr  hvr
+            // h       h   _   hv  v   hr  r   hvr hvr
+            // v       v   hv  _   h   vr  hvr r   hr
+            // hv      hv  v   h   _   hvr vr  hr  r
+            // r       r   vr  hr  hvr hv  h   v   _
+            // hr      hr  hvr r   vr  v   _   hv  h
+            // vr      vr  r   hvr hv  h   hv  _   v
+            // hvr     hvr hr   vr  r  _   v   h   hv
 
-            return combined;
+            if (left.HasFlag(Transformation.Rotation))
+            {
+                // Remove rotation from left and apply to right transformation.
+                var left0 = left & (Transformation)3;
+                var right0 = (int)right switch
+                {
+                    0 => (Transformation)4,
+                    1 => (Transformation)6,
+                    2 => (Transformation)5,
+                    3 => (Transformation)7,
+                    4 => (Transformation)3,
+                    5 => (Transformation)1,
+                    6 => (Transformation)2,
+                    7 => (Transformation)0,
+                    _ => throw new ArgumentOutOfRangeException(nameof(right)),
+                };
+                return left0 ^ right0;
+            }
+            else
+            {
+                // Horizontal and vertical reflections are symmetrical and rotation comes last.
+                return left ^ right;
+            }
+        }
+
+        public static Func<Vector, Vector>? GetTransform(
+            this Transformation tr,
+            int length)
+        {
+            return GetTransform(tr, length, length);
+        }
+
+        public static Func<Vector, Vector>? GetTransform(
+            this Transformation tr,
+            int height,
+            int width)
+        {
+            // The width/height is between the first and last indices in the rectangle.
+            if (height <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+            if (width <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+
+            // Transformations must always be done in the same order every time:
+            // horizontal and vertical reflection then rotate 90 degrees clockwise.
+            return (int)tr switch
+            {
+                // No transformation, return null.
+                0 => null,
+                1 => p => new Vector(width - p.X, p.Y),
+                2 => p => new Vector(p.X, height - p.Y),
+                3 => p => new Vector(width - p.X, height - p.Y),
+                4 => p => new Vector(height - p.Y, p.X),
+                5 => p => new Vector(height - p.Y, width - p.X),
+                6 => p => new Vector(p.Y, p.X),
+                7 => p => new Vector(p.Y, width - p.X),
+                _ => throw new ArgumentOutOfRangeException(nameof(tr)),
+            };
         }
     }
 
@@ -594,6 +634,21 @@ namespace AOC20.Day20
         {
             X = x;
             Y = y;
+        }
+
+        public static Vector FromIndex(int index, int width)
+        {
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+
+            return new Vector(index % width, index / width);
+        }
+
+        public int AsIndex(int width)
+        {
+            if (X >= width) throw new ArgumentException("X value exceeds width", nameof(width));
+
+            return X + width * Y;
         }
 
         public override string ToString() => $"({X}, {Y})";

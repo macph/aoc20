@@ -122,18 +122,18 @@ namespace AOC20
             else
             {
                 // Print seconds.
-                return $"{RoundTo((double)span.Ticks / TicksPerSecond, Figures)} ms";
+                return $"{RoundTo((double)span.Ticks / TicksPerSecond, Figures)} s";
             }
         }
 
         private static double RoundTo(
             double value,
-            int signficiantFigures,
+            int significantFigures,
             MidpointRounding rounding = MidpointRounding.AwayFromZero)
         {
-            if (signficiantFigures <= 0)
+            if (significantFigures <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(signficiantFigures));
+                throw new ArgumentOutOfRangeException(nameof(significantFigures));
             }
             if (value == 0 || double.IsNaN(value) || double.IsInfinity(value))
             {
@@ -145,15 +145,15 @@ namespace AOC20
 
             double rounded;
 
-            if (size >= signficiantFigures)
+            if (size >= significantFigures)
             {
                 // Round to nearest integer..
                 rounded = Math.Round(value, rounding);
             }
             else
             {
-                // Round decimal digits to match signficiant figures.
-                var decimals = signficiantFigures - 1 - size;
+                // Round decimal digits to match significant figures.
+                var decimals = significantFigures - 1 - size;
                 rounded = Math.Round(value, decimals, rounding);
             }
 
